@@ -1,0 +1,50 @@
+# Ingress isolation for KubeShield itself.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubeshield-default-deny-ingress
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+# PostgreSQL accepts connections only from the API.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubeshield-postgres-from-api
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/component: postgres}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/component: api}
+      ports:
+        - {port: 5432, protocol: TCP}
+---
+# The API accepts Falcosidekick webhooks and dashboard traffic (NodePort, via the node).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubeshield-api-ingress
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/component: api}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: {{ .Values.falcoNamespace }}}
+      ports:
+        - {port: 8000, protocol: TCP}
+    - from:
+        - ipBlock: {cidr: 0.0.0.0/0}
+      ports:
+        - {port: 8000, protocol: TCP}

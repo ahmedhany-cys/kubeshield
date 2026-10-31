@@ -1,0 +1,41 @@
+image:
+  repository: kubeshield
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+# Secret holding: jwt-secret, ingest-token, admin-password, postgres-password.
+# Created by scripts/lab-up.sh with random values; never commit real values.
+existingSecret: kubeshield-secrets
+
+api:
+  replicas: 1
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 768Mi}
+  # Trivy vulnerability DB cache (emptyDir). Re-downloaded after a pod restart.
+  trivyCacheSizeLimit: 2Gi
+  env:
+    KUBESHIELD_INVENTORY_INTERVAL_SECONDS: "60"
+    KUBESHIELD_POLICY_INTERVAL_SECONDS: "60"
+    KUBESHIELD_INCIDENT_WINDOW_MINUTES: "30"
+    KUBESHIELD_HUBBLE_RELAY_ADDRESS: "hubble-relay.kube-system.svc:80"
+  # Lab exposure: NodePort mapped by kind to 127.0.0.1:8080 on the host only.
+  nodePort: 30080
+  # The UI is served over plain HTTP on loopback in the lab; set true behind TLS.
+  cookieSecure: false
+
+postgres:
+  image: docker.io/library/postgres:17.6-alpine
+  storage: 1Gi
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 384Mi}
+
+# Namespaces where KubeShield may act (response actions, simulations). Each must
+# also carry the label kubeshield.io/lab=true; the API refuses anything else.
+labNamespaces: [lab-apps, lab-payments, lab-legacy]
+preflightNamespace: kubeshield-preflight
+# Namespace where Kyverno writes admission PolicyViolation events.
+kyvernoEventsNamespace: default
+# Namespace where Falcosidekick runs (allowed to reach the ingest endpoint).
+falcoNamespace: falco

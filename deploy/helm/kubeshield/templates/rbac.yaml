@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubeshield
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+---
+# Cluster-wide READ-ONLY access for inventory, posture, policy and network views.
+# Deliberately excludes secrets, configmaps and every write verb.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubeshield-reader
+  labels: {{- include "ks.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [nodes, namespaces, pods, services, serviceaccounts]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, daemonsets, statefulsets, replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [roles, rolebindings, clusterroles, clusterrolebindings]
+    verbs: [get, list, watch]
+  - apiGroups: [cilium.io]
+    resources: [ciliumnetworkpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [policies.kyverno.io]
+    resources: [validatingpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [wgpolicyk8s.io]
+    resources: [policyreports, clusterpolicyreports]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeshield-reader
+  labels: {{- include "ks.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: kubeshield
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeshield-reader
+{{- range .Values.labNamespaces }}
+---
+# Response actions and attack simulations - granted ONLY inside lab namespaces.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubeshield-responder
+  namespace: {{ . }}
+  labels: {{- include "ks.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, create, patch, delete]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [create, get]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list, create, patch, delete]
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    verbs: [get, patch, update]
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: [get, list, create, update, delete]
+  - apiGroups: [cilium.io]
+    resources: [ciliumnetworkpolicies]
+    verbs: [get, list, create, update, delete]
+  - apiGroups: [cilium.io]
+    resources: [ciliumendpoints]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubeshield-responder
+  namespace: {{ . }}
+  labels: {{- include "ks.labels" $ | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: kubeshield
+    namespace: {{ $.Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubeshield-responder
+{{- end }}
+---
+# Pre-deployment gate: the API only ever sends dryRun=All requests here.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubeshield-preflight
+  namespace: {{ .Values.preflightNamespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [create]
+  - apiGroups: [apps]
+    resources: [deployments, daemonsets, statefulsets, replicasets]
+    verbs: [create]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubeshield-preflight
+  namespace: {{ .Values.preflightNamespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: kubeshield
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubeshield-preflight
+---
+# Kyverno records admission denials as Events in this namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubeshield-kyverno-events
+  namespace: {{ .Values.kyvernoEventsNamespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubeshield-kyverno-events
+  namespace: {{ .Values.kyvernoEventsNamespace }}
+  labels: {{- include "ks.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: kubeshield
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubeshield-kyverno-events
