@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kubeshield"
+version = "0.1.0"
+description = "Kubernetes runtime threat detection and automated response platform"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{ name = "ahmedhany-cys" }]
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "sqlalchemy>=2.0.36",
+  "psycopg[binary]>=3.2",
+  "kubernetes>=31.0",
+  "argon2-cffi>=23.1",
+  "pyjwt>=2.10",
+  "grpcio>=1.68",
+  "protobuf>=5.28",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "httpx>=0.28",
+  "grpcio-tools>=1.68",
+  "ruff>=0.8",
+  "pip-audit>=2.7",
+]
+
+[tool.setuptools.packages.find]
+include = ["kubeshield*"]
+
+[tool.setuptools.package-data]
+kubeshield = ["data/*.yaml", "network/hubble_api/**/*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: requires the kind laboratory cluster (KUBESHIELD_IT=1)",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["kubeshield/network/hubble_api"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "S", "UP"]
+ignore = ["S101", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S107"]
