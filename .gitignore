@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Local configuration and data - never commit secrets
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+.lab-credentials
+
+# Tooling / OS
+.DS_Store
+.idea/
+.vscode/
+e2e/.playwright/
+e2e/.venv/
