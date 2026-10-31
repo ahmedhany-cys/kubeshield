@@ -1,0 +1,49 @@
+# Falco for the KubeShield laboratory (chart falcosecurity/falco 9.2.2, Falco 0.45.2).
+# Install with:
+#   helm upgrade --install falco falcosecurity/falco -n falco --version 9.2.2 \
+#     -f deploy/falco/values.yaml \
+#     --set-file 'customRules.kubeshield_rules\.yaml=deploy/falco/kubeshield_rules.yaml'
+# The webhook address and bearer token are injected from the
+# "falcosidekick-kubeshield" Secret created by scripts/lab-up.sh (never committed).
+driver:
+  kind: modern_ebpf
+tty: true
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {cpu: 1000m, memory: 1024Mi}
+collectors:
+  kubernetes:
+    enabled: false   # pod/namespace names come from container runtime labels
+falco:
+  json_output: true
+  json_include_output_property: true
+  json_include_tags_property: true
+  priority: notice
+  rule_matching: all
+  append_output:
+    - suggested_output: true
+    - match:
+        source: syscall
+      extra_fields:
+        - container.id
+        - container.name
+        - container.image.repository
+        - container.image.tag
+        - k8s.ns.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - proc.exepath
+        - proc.pcmdline
+        - user.uid
+falcosidekick:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+  config:
+    existingSecret: falcosidekick-kubeshield
+    webhook:
+      minimumpriority: notice
+      checkcert: true
+  webui:
+    enabled: false

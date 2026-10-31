@@ -1,0 +1,188 @@
+# KubeShield custom Falco rules.
+#
+# Every rule is prefixed "KubeShield" and tagged with:
+#   - "kubeshield" and a stable rule id (ks.<number>) used by the backend
+#   - MITRE ATT&CK technique ids (T....) used by the ATT&CK coverage engine
+# Rules apply to workload containers. Platform namespaces listed in
+# ks_trusted_namespaces are excluded to keep the signal focused on workloads.
+
+- list: ks_trusted_namespaces
+  items: [kube-system, kube-public, kube-node-lease, local-path-storage,
+          falco, kyverno, kubeshield-system]
+
+- macro: ks_workload_container
+  condition: >
+    container.id != host and container.id != "" and
+    k8s.ns.name exists and not k8s.ns.name in (ks_trusted_namespaces)
+
+- list: ks_shell_binaries
+  items: [sh, bash, ash, dash, zsh, ksh, csh, tcsh, fish, busybox]
+
+- list: ks_recon_binaries
+  items: [nc, ncat, netcat, nmap, masscan, zmap, socat, tcpdump, tshark,
+          nsenter, kubectl, crictl, ctr, nping, hping3]
+
+- list: ks_sensitive_files
+  items: [/etc/shadow, /etc/gshadow, /etc/sudoers, /etc/master.passwd,
+          /etc/security/opasswd]
+
+- list: ks_runtime_sockets
+  items: [/var/run/docker.sock, /run/docker.sock,
+          /var/run/containerd/containerd.sock, /run/containerd/containerd.sock,
+          /var/run/crio/crio.sock, /run/crio/crio.sock]
+
+# Destination ports considered normal for lab workloads (DNS, HTTP, HTTPS, app port).
+- macro: ks_allowed_egress
+  condition: >
+    (evt.arg.addr endswith ":53" or evt.arg.addr endswith ":80" or
+     evt.arg.addr endswith ":443" or evt.arg.addr endswith ":8080")
+
+# Approved client -> port pairs (tuning example: the lab's payments-api health
+# check legitimately calls payments-db on 5432; storefront must not).
+- macro: ks_known_egress_clients
+  condition: >
+    (k8s.ns.name=lab-payments and container.name=api and proc.name=wget and
+     evt.arg.addr endswith ":5432")
+
+- rule: KubeShield Shell Spawned in Container
+  desc: >
+    A shell was started inside a workload container by something other than
+    another shell or the container entrypoint. This is typical of
+    "kubectl exec" sessions and of web-shell / RCE payloads.
+  condition: >
+    evt.type in (execve, execveat) and ks_workload_container and
+    proc.name in (ks_shell_binaries) and proc.vpid != 1 and
+    not proc.pname in (ks_shell_binaries)
+  output: >
+    Shell spawned in container (ks_rule=ks.001 user=%user.name uid=%user.uid
+    process=%proc.name cmdline=%proc.cmdline pid=%proc.pid parent=%proc.pname
+    exepath=%proc.exepath tty=%proc.tty)
+  priority: WARNING
+  tags: [kubeshield, ks.001, container, shell, mitre_execution, T1059.004, T1609]
+
+- rule: KubeShield Suspicious Tool Execution
+  desc: >
+    A network reconnaissance, packet capture, namespace-entry or cluster
+    administration binary was executed inside a workload container.
+  condition: >
+    evt.type in (execve, execveat) and ks_workload_container and
+    proc.name in (ks_recon_binaries)
+  output: >
+    Suspicious tool executed in container (ks_rule=ks.002 user=%user.name
+    process=%proc.name cmdline=%proc.cmdline pid=%proc.pid parent=%proc.pname
+    exepath=%proc.exepath)
+  priority: ERROR
+  tags: [kubeshield, ks.002, container, process, mitre_discovery, T1046]
+
+- rule: KubeShield Sensitive File Read
+  desc: A credential store such as /etc/shadow was opened for reading inside a workload container.
+  condition: >
+    evt.type in (open, openat, openat2) and evt.is_open_read=true and
+    fd.typechar=f and ks_workload_container and fd.name in (ks_sensitive_files)
+  output: >
+    Sensitive file opened for reading (ks_rule=ks.003 file=%fd.name
+    user=%user.name process=%proc.name cmdline=%proc.cmdline pid=%proc.pid
+    parent=%proc.pname)
+  priority: ERROR
+  tags: [kubeshield, ks.003, container, filesystem, mitre_credential_access, T1003.008]
+
+- rule: KubeShield Service Account Token Read
+  desc: >
+    The projected Kubernetes service account token was read by an interactive
+    or unexpected process. Stolen tokens let an attacker call the Kubernetes API.
+  condition: >
+    evt.type in (open, openat, openat2) and evt.is_open_read=true and
+    ks_workload_container and
+    fd.name contains "/secrets/kubernetes.io/serviceaccount/" and fd.name endswith "token"
+  output: >
+    Service account token read (ks_rule=ks.004 file=%fd.name user=%user.name
+    process=%proc.name cmdline=%proc.cmdline pid=%proc.pid parent=%proc.pname)
+  priority: CRITICAL
+  tags: [kubeshield, ks.004, container, k8s, mitre_credential_access, T1528, T1552.001]
+
+- rule: KubeShield Setuid or Setgid Bit Set
+  desc: >
+    A file was given the setuid or setgid bit inside a workload container,
+    a common step to plant a privilege escalation backdoor.
+  condition: >
+    evt.type in (chmod, fchmod, fchmodat, fchmodat2) and evt.rawres=0 and
+    ks_workload_container and
+    (evt.arg.mode contains "S_ISUID" or evt.arg.mode contains "S_ISGID")
+  output: >
+    Setuid/setgid bit set (ks_rule=ks.005 file=%evt.arg.filename mode=%evt.arg.mode
+    fd=%fd.name user=%user.name process=%proc.name cmdline=%proc.cmdline
+    pid=%proc.pid)
+  priority: CRITICAL
+  tags: [kubeshield, ks.005, container, privilege_escalation, mitre_privilege_escalation, T1548.001]
+
+- rule: KubeShield Execution From Writable Directory
+  desc: >
+    A binary was executed from a world-writable location (/tmp, /var/tmp,
+    /dev/shm). Dropped payloads are commonly staged there.
+  condition: >
+    evt.type in (execve, execveat) and ks_workload_container and
+    (proc.exepath startswith "/tmp/" or proc.exepath startswith "/var/tmp/" or
+     proc.exepath startswith "/dev/shm/")
+  output: >
+    Binary executed from writable directory (ks_rule=ks.006
+    exepath=%proc.exepath user=%user.name process=%proc.name
+    cmdline=%proc.cmdline pid=%proc.pid parent=%proc.pname)
+  priority: CRITICAL
+  tags: [kubeshield, ks.006, container, process, mitre_command_and_control, T1105]
+
+- rule: KubeShield Unexpected Outbound Connection
+  desc: >
+    A workload container attempted a TCP/UDP connection to a non-loopback
+    destination on a port outside the allowed egress list. The destination is
+    taken from the connect() address argument so that attempts blocked by a
+    network policy (which never complete) are still reported.
+  condition: >
+    evt.type=connect and ks_workload_container and fd.typechar in (4, 6) and
+    evt.arg.addr exists and not evt.arg.addr startswith "127." and
+    not evt.arg.addr startswith "0.0.0.0" and not ks_allowed_egress and
+    not ks_known_egress_clients
+  output: >
+    Unexpected outbound connection (ks_rule=ks.007 address=%evt.arg.addr
+    connection=%fd.name result=%evt.res user=%user.name process=%proc.name
+    cmdline=%proc.cmdline pid=%proc.pid)
+  priority: WARNING
+  tags: [kubeshield, ks.007, container, network, mitre_discovery, T1046]
+
+- rule: KubeShield Sensitive Host Path Access
+  desc: >
+    A process inside a workload container opened a file below a host
+    filesystem mount (/host, /hostfs, /rootfs, /node) or a container runtime
+    socket. This indicates an attempt to reach the node from a pod.
+  condition: >
+    evt.type in (open, openat, openat2) and fd.typechar in (f, u) and
+    ks_workload_container and
+    (fd.name startswith "/host/" or fd.name startswith "/hostfs/" or
+     fd.name startswith "/rootfs/" or fd.name startswith "/node/" or
+     fd.name in (ks_runtime_sockets))
+  output: >
+    Sensitive host path accessed from container (ks_rule=ks.008 file=%fd.name
+    flags=%evt.arg.flags user=%user.name process=%proc.name
+    cmdline=%proc.cmdline pid=%proc.pid)
+  priority: CRITICAL
+  tags: [kubeshield, ks.008, container, host, mitre_privilege_escalation, T1611]
+
+# kind runs runc inside a container, so the upstream rule sees runc's own
+# bind-mount helper as a "new binary" at every pod start. Exclude only that.
+- rule: Drop and execute new binary in container
+  condition: and not (proc.name=mount and proc.pname startswith "runc")
+  override:
+    condition: append
+
+# The KubeShield API, Kyverno and Falco legitimately talk to the API server.
+- rule: Contact K8S API Server From Container
+  condition: and not k8s.ns.name in (ks_trusted_namespaces)
+  override:
+    condition: append
+
+# busybox httpd (the lab's web servers) hands each accepted socket to a child
+# via dup2, which the upstream rule reports as a redirected shell. Exclude only
+# that binary from that image.
+- rule: Redirect STDOUT/STDIN to Network Connection in Container
+  condition: and not (proc.name=httpd and container.image.repository=docker.io/library/busybox)
+  override:
+    condition: append
