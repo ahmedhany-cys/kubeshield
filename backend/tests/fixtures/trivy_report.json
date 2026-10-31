@@ -1,0 +1,29 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "docker.io/library/alpine:3.10.0",
+  "Metadata": {"OS": {"Family": "alpine", "Name": "3.10.0", "EOSL": true},
+               "RepoDigests": ["alpine@sha256:ca1c944a4f8486a153024d9965aafbe24f5723c1d5c02f4964c045a16d19dc54"]},
+  "Results": [
+    {"Target": "alpine:3.10.0 (alpine 3.10.0)", "Class": "os-pkgs", "Type": "alpine",
+     "Vulnerabilities": [
+       {"VulnerabilityID": "CVE-2019-14697", "PkgName": "musl", "InstalledVersion": "1.1.22-r2",
+        "FixedVersion": "1.1.22-r3", "Severity": "CRITICAL", "Title": "musl libc x87 floating-point stack adjustment",
+        "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2019-14697", "CVSS": {"nvd": {"V3Score": 9.8}}},
+       {"VulnerabilityID": "CVE-2019-14697", "PkgName": "musl", "InstalledVersion": "1.1.22-r2",
+        "FixedVersion": "1.1.22-r3", "Severity": "CRITICAL"},
+       {"VulnerabilityID": "CVE-2021-36159", "PkgName": "apk-tools", "InstalledVersion": "2.10.4-r2",
+        "FixedVersion": "", "Severity": "HIGH", "CVSS": {"redhat": {"V3Score": 7.5}}},
+       {"VulnerabilityID": "CVE-2022-0000", "PkgName": "zlib", "InstalledVersion": "1.2.11-r1",
+        "Severity": "UNKNOWN"}
+     ]},
+    {"Target": "/app/config.env", "Class": "secret",
+     "Secrets": [{"RuleID": "aws-access-key-id", "Category": "AWS", "Severity": "CRITICAL",
+                  "Title": "AWS Access Key ID", "StartLine": 3, "EndLine": 3, "Match": "AWS_KEY=****"}]},
+    {"Target": "Dockerfile", "Class": "config",
+     "Misconfigurations": [
+       {"ID": "DS002", "AVDID": "AVD-DS-0002", "Title": "Image user should not be 'root'", "Severity": "HIGH",
+        "Status": "FAIL", "Message": "Specify at least 1 USER command", "Resolution": "Add 'USER <non root user>'"},
+       {"ID": "DS026", "AVDID": "AVD-DS-0026", "Title": "No HEALTHCHECK", "Severity": "LOW", "Status": "PASS"}
+     ]}
+  ]
+}
