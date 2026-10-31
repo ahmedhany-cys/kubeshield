@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kubeshield-policies
+description: KubeShield pod security guardrails as Kyverno ValidatingPolicies (audit and enforce modes)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

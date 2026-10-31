@@ -1,0 +1,18 @@
+# KubeShield isolated laboratory cluster.
+# Cilium replaces kindnet so that network policy enforcement and Hubble flow
+# visibility come from a real eBPF datapath.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kubeshield-lab
+networking:
+  disableDefaultCNI: true
+  # Keep the API server bound to loopback on the host: the lab is never exposed.
+  apiServerAddress: "127.0.0.1"
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # KubeShield UI/API via NodePort, bound to loopback only.
+      - containerPort: 30080
+        hostPort: 8080
+        listenAddress: "127.0.0.1"
+        protocol: TCP

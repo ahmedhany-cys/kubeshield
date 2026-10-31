@@ -1,0 +1,28 @@
+# Kyverno for the KubeShield laboratory (chart kyverno/kyverno 3.9.2, Kyverno 1.19.2).
+# Single replicas and no cleanup controller to fit a laptop-sized kind cluster.
+admissionController:
+  replicas: 1
+  container:
+    resources:
+      requests: {cpu: 50m, memory: 128Mi}
+      limits: {memory: 384Mi}
+backgroundController:
+  enabled: true
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {memory: 256Mi}
+reportsController:
+  enabled: true
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {memory: 256Mi}
+cleanupController:
+  enabled: false
+config:
+  # Never let policies interfere with the platform itself.
+  webhooks:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [kube-system, kyverno, falco]

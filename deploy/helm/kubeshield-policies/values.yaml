@@ -1,0 +1,33 @@
+# Namespaces opt in to a mode with the label kubeshield.io/policy-mode=<mode>.
+#   enforce -> admission requests that violate a control are denied (validationActions: Deny)
+#   audit   -> requests are admitted; violations are recorded in PolicyReports (validationActions: Audit)
+# Background scanning reports violations of existing resources in both modes.
+modes:
+  enforce:
+    enabled: true
+  audit:
+    enabled: true
+
+# Capabilities that must never be added to a container.
+dangerousCapabilities:
+  - ALL
+  - SYS_ADMIN
+  - NET_ADMIN
+  - SYS_PTRACE
+  - SYS_MODULE
+  - SYS_RAWIO
+  - SYS_BOOT
+  - DAC_READ_SEARCH
+  - BPF
+  - PERFMON
+
+controls:
+  disallowPrivileged: true
+  requireRunAsNonRoot: true
+  disallowHostPidIpc: true
+  disallowHostNetwork: true
+  requireResourceLimits: true
+  disallowLatestTag: true
+  restrictCapabilities: true
+  disallowHostPath: true
+  disallowPrivilegeEscalation: true

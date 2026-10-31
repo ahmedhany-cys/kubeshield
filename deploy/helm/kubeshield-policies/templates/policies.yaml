@@ -1,0 +1,130 @@
+{{- $root := . -}}
+{{- $caps := .Values.dangerousCapabilities -}}
+{{- range $mode, $m := .Values.modes }}
+{{- if $m.enabled }}
+{{- if $root.Values.controls.disallowPrivileged }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "disallow-privileged" "mode" $mode "root" $root "title" "Disallow privileged containers" "severity" "critical" "remediation" "Remove securityContext.privileged or set it to false; grant only the specific capability the workload needs.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: >-
+        variables.allContainers.all(c, !has(c.securityContext) ||
+          !has(c.securityContext.privileged) || c.securityContext.privileged == false)
+      message: "Privileged containers are not allowed (securityContext.privileged must be false)."
+{{- end }}
+{{- if $root.Values.controls.requireRunAsNonRoot }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "require-run-as-non-root" "mode" $mode "root" $root "title" "Require containers to run as non-root" "severity" "high" "remediation" "Set securityContext.runAsNonRoot: true and a non-zero runAsUser at pod or container level, and build the image with a non-root USER.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: >-
+        variables.allContainers.all(c,
+          (has(c.securityContext) && has(c.securityContext.runAsNonRoot) && c.securityContext.runAsNonRoot == true) ||
+          ((!has(c.securityContext) || !has(c.securityContext.runAsNonRoot)) &&
+            has(object.spec.securityContext) && has(object.spec.securityContext.runAsNonRoot) &&
+            object.spec.securityContext.runAsNonRoot == true))
+      message: "Containers must set runAsNonRoot: true (pod or container securityContext)."
+    - expression: >-
+        (!has(object.spec.securityContext) || !has(object.spec.securityContext.runAsUser) || object.spec.securityContext.runAsUser != 0) &&
+        variables.allContainers.all(c, !has(c.securityContext) || !has(c.securityContext.runAsUser) || c.securityContext.runAsUser != 0)
+      message: "runAsUser must not be 0 (root)."
+{{- end }}
+{{- if $root.Values.controls.disallowHostPidIpc }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "disallow-host-pid-ipc" "mode" $mode "root" $root "title" "Disallow host PID and IPC namespaces" "severity" "critical" "remediation" "Remove hostPID and hostIPC from the pod spec; use the Kubernetes API or a sidecar instead of node-level process visibility.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: "!has(object.spec.hostPID) || object.spec.hostPID == false"
+      message: "Sharing the host PID namespace (hostPID) is not allowed."
+    - expression: "!has(object.spec.hostIPC) || object.spec.hostIPC == false"
+      message: "Sharing the host IPC namespace (hostIPC) is not allowed."
+{{- end }}
+{{- if $root.Values.controls.disallowHostNetwork }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "disallow-host-network" "mode" $mode "root" $root "title" "Disallow host network" "severity" "high" "remediation" "Remove hostNetwork and hostPort; expose the workload through a Service.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: "!has(object.spec.hostNetwork) || object.spec.hostNetwork == false"
+      message: "Using the host network namespace (hostNetwork) is not allowed."
+    - expression: >-
+        variables.allContainers.all(c, !has(c.ports) || c.ports.all(p, !has(p.hostPort) || p.hostPort == 0))
+      message: "hostPort is not allowed."
+{{- end }}
+{{- if $root.Values.controls.requireResourceLimits }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "require-resource-limits" "mode" $mode "root" $root "title" "Require CPU and memory limits" "severity" "medium" "remediation" "Set resources.limits.cpu and resources.limits.memory on every container.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, has(c.resources) && has(c.resources.limits) &&
+          'memory' in c.resources.limits && 'cpu' in c.resources.limits)
+      message: "Every container must define resources.limits.cpu and resources.limits.memory."
+{{- end }}
+{{- if $root.Values.controls.disallowLatestTag }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "disallow-latest-tag" "mode" $mode "root" $root "title" "Disallow mutable latest image tags" "severity" "medium" "remediation" "Pin images to an explicit version tag, preferably with an @sha256 digest.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: >-
+        variables.allContainers.all(c, c.image.contains('@sha256:') ||
+          (c.image.split('/')[c.image.split('/').size() - 1].contains(':') && !c.image.endsWith(':latest')))
+      message: "Images must use an explicit tag other than 'latest' (or a digest)."
+{{- end }}
+{{- if $root.Values.controls.restrictCapabilities }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "restrict-capabilities" "mode" $mode "root" $root "title" "Restrict dangerous Linux capabilities" "severity" "high" "remediation" "Drop ALL capabilities and add back only narrowly scoped ones such as NET_BIND_SERVICE.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: >-
+        variables.allContainers.all(c, !has(c.securityContext) || !has(c.securityContext.capabilities) ||
+          !has(c.securityContext.capabilities.add) ||
+          c.securityContext.capabilities.add.all(cap, !(cap in {{ toJson $caps }})))
+      message: "Adding dangerous capabilities ({{ join ", " $caps }}) is not allowed."
+{{- end }}
+{{- if $root.Values.controls.disallowHostPath }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "disallow-host-path" "mode" $mode "root" $root "title" "Disallow hostPath volumes" "severity" "high" "remediation" "Replace hostPath volumes with emptyDir, ConfigMap, Secret or PersistentVolumeClaim volumes.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: "!has(object.spec.volumes) || object.spec.volumes.all(v, !has(v.hostPath))"
+      message: "hostPath volumes are not allowed."
+{{- end }}
+{{- if $root.Values.controls.disallowPrivilegeEscalation }}
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+{{ include "ksp.meta" (dict "name" "disallow-privilege-escalation" "mode" $mode "root" $root "title" "Disallow privilege escalation" "severity" "medium" "remediation" "Set securityContext.allowPrivilegeEscalation: false on every container.") }}
+spec:
+{{ include "ksp.common" (dict "mode" $mode "root" $root) | indent 2 }}
+  validations:
+    - expression: >-
+        variables.allContainers.all(c, has(c.securityContext) &&
+          has(c.securityContext.allowPrivilegeEscalation) && c.securityContext.allowPrivilegeEscalation == false)
+      message: "allowPrivilegeEscalation must be set to false."
+{{- end }}
+{{- end }}
+{{- end }}

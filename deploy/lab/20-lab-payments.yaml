@@ -1,0 +1,107 @@
+# lab-payments: a protected "database" that only payments-api may reach.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-db
+  namespace: lab-payments
+  labels: {app: payments-db}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: payments-db}
+  template:
+    metadata:
+      labels: {app: payments-db, tier: data}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: db
+          image: docker.io/library/busybox:1.37
+          # Stand-in TCP service on the PostgreSQL port.
+          command: ["sh", "-c", "mkdir -p /tmp/www && echo ok > /tmp/www/index.html && exec httpd -f -p 5432 -h /tmp/www"]
+          ports:
+            - containerPort: 5432
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 16Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments-db
+  namespace: lab-payments
+spec:
+  selector: {app: payments-db}
+  ports:
+    - {port: 5432, targetPort: 5432}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  namespace: lab-payments
+  labels: {app: payments-api}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: payments-api}
+  template:
+    metadata:
+      labels: {app: payments-api, tier: api}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: api
+          image: docker.io/library/busybox:1.37
+          command: ["sh", "-c", "while true; do wget -q -T 2 -O /dev/null http://payments-db:5432/ || true; sleep 30; done"]
+          resources:
+            requests: {cpu: 5m, memory: 8Mi}
+            limits: {cpu: 50m, memory: 32Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: lab-payments
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: payments-db-allow-api
+  namespace: lab-payments
+spec:
+  podSelector:
+    matchLabels: {app: payments-db}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app: payments-api}
+      ports:
+        - {port: 5432, protocol: TCP}

@@ -1,0 +1,121 @@
+# lab-apps: a hardened storefront (the "victim" of runtime scenarios) and a
+# catalog service it legitimately calls. Both satisfy every enforce-mode policy.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: storefront
+  namespace: lab-apps
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storefront
+  namespace: lab-apps
+  labels: {app: storefront}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: storefront}
+  template:
+    metadata:
+      labels: {app: storefront, tier: web}
+    spec:
+      serviceAccountName: storefront
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: web
+          image: docker.io/library/busybox:1.37
+          command: ["sh", "-c", "mkdir -p /tmp/www && echo storefront > /tmp/www/index.html && exec httpd -f -p 8080 -h /tmp/www"]
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+          readinessProbe:
+            tcpSocket: {port: 8080}
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 32Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storefront
+  namespace: lab-apps
+spec:
+  selector: {app: storefront}
+  ports:
+    - {port: 8080, targetPort: 8080}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  namespace: lab-apps
+  labels: {app: catalog}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: catalog}
+  template:
+    metadata:
+      labels: {app: catalog, tier: api}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: api
+          image: docker.io/library/busybox:1.37
+          command: ["sh", "-c", "mkdir -p /tmp/www && echo catalog > /tmp/www/index.html && exec httpd -f -p 8080 -h /tmp/www"]
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 16Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+  namespace: lab-apps
+spec:
+  selector: {app: catalog}
+  ports:
+    - {port: 8080, targetPort: 8080}
+---
+# Namespace isolation: only same-namespace traffic may reach lab-apps pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: lab-apps
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}

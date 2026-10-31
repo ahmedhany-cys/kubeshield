@@ -1,0 +1,61 @@
+# lab-legacy: a DELIBERATELY INSECURE workload in an audit-mode namespace.
+# It exists so posture scanning, Kyverno audit reports and host-path detections
+# have something real to find. Never copy this pattern.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: legacy-reporting
+  namespace: lab-legacy
+---
+# Over-broad permissions: read every secret in the namespace and exec into pods.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: legacy-overprivileged
+  namespace: lab-legacy
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: legacy-overprivileged
+  namespace: lab-legacy
+subjects:
+  - kind: ServiceAccount
+    name: legacy-reporting
+    namespace: lab-legacy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: legacy-overprivileged
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: legacy-reporting
+  namespace: lab-legacy
+  labels: {app: legacy-reporting}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: legacy-reporting}
+  template:
+    metadata:
+      labels: {app: legacy-reporting}
+    spec:
+      serviceAccountName: legacy-reporting
+      containers:
+        - name: reporter
+          image: docker.io/library/busybox:1.37
+          command: ["sh", "-c", "sleep infinity"]
+          volumeMounts:
+            - {name: host-etc, mountPath: /host/etc, readOnly: true}
+      volumes:
+        - name: host-etc
+          hostPath: {path: /etc, type: Directory}

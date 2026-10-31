@@ -1,0 +1,43 @@
+# Isolated laboratory namespaces. Only namespaces labelled kubeshield.io/lab=true
+# can be targeted by KubeShield response actions and attack simulations.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-apps
+  labels:
+    kubeshield.io/lab: "true"
+    kubeshield.io/policy-mode: enforce
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-payments
+  labels:
+    kubeshield.io/lab: "true"
+    kubeshield.io/policy-mode: enforce
+---
+# Audit-mode namespace holding a deliberately insecure legacy workload.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-legacy
+  labels:
+    kubeshield.io/lab: "true"
+    kubeshield.io/policy-mode: audit
+---
+# Empty namespace used only for server-side dry-run admission checks.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubeshield-preflight
+  labels:
+    kubeshield.io/policy-mode: enforce
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: kubeshield-preflight
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]

@@ -1,0 +1,22 @@
+# Cilium for the KubeShield kind laboratory (chart cilium/cilium 1.20.4).
+# Keeps kube-proxy, uses Kubernetes host-scope IPAM, and enables Hubble Relay
+# so KubeShield can stream real L3/L4 flow observations over gRPC.
+ipam:
+  mode: kubernetes
+kubeProxyReplacement: false
+operator:
+  replicas: 1
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+    resources:
+      requests: {cpu: 25m, memory: 64Mi}
+  ui:
+    enabled: false
+  metrics:
+    enabled: null
