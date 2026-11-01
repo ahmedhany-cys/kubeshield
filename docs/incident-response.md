@@ -75,6 +75,9 @@ Admins can create, edit, disable or delete playbooks in the UI (`/api/v1/playboo
 - **Role separation.** viewer: read; responder: approve/request non-destructive actions, run simulations;
   admin: destructive actions, playbooks, settings.
 - **Forensics before deletion.** Pod spec and recent logs are stored in the action result.
+- **No replay after a restart.** An action that was `approved` or `executing` when the API process stopped
+  is marked `failed` at the next startup (with an audit entry), never executed again automatically. An
+  `executing` action may have partly applied, so check the target before requesting it again.
 
 ## Example investigation
 

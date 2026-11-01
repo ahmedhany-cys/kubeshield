@@ -50,6 +50,11 @@ namespace; KubeShield reads that namespace (Role `kubeshield-kyverno-events`).
 **Scan `failed` with a registry error.** Trivy pulls the image from its registry; images that exist only
 inside kind (loaded with `kind load`) cannot be scanned remotely.
 
+**API pod evicted with `Usage of EmptyDir volume "tmp" exceeds the limit`.** Trivy stages the compressed
+DB download in `/tmp` (~270 MB with Trivy 0.76) and the extracted DB takes ~1.6 GB of the cache volume.
+The chart defaults (`api.tmpSizeLimit: 1Gi`, `api.trivyCacheSizeLimit: 3Gi`) cover this; earlier
+defaults (256 Mi / 2 Gi) got the pod evicted on its first scan after a restart.
+
 ## Simulations
 
 **`error: no ready, unquarantined pod with app=storefront`.** A previous response deleted or quarantined
@@ -57,3 +62,7 @@ the pod. Wait for the Deployment to recreate it, or release the quarantine.
 
 **`missed` outcome.** Check Falco and Falcosidekick health first; the run's checks list exactly which
 detection did not arrive.
+
+**Run or scan marked `interrupted by an API restart`.** Work runs in background threads of the API pod;
+if the pod restarts, the next startup marks whatever was in flight as failed (and audits it) so it does
+not block new runs. Response actions caught this way are never re-executed: request them again.

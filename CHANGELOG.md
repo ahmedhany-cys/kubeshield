@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- API pod was evicted on its first image scan after a restart: Trivy's DB download overflowed the
+  256 Mi `/tmp` volume. `/tmp` and the Trivy cache limits are now configurable (`api.tmpSizeLimit`,
+  `api.trivyCacheSizeLimit`) with defaults of 1 Gi and 3 Gi.
+- A simulation, image scan or response action in flight when the API restarted stayed `running` forever,
+  blocking every later simulation and rescans of that image. Startup now marks such work as failed and
+  audits it; response actions are never replayed automatically.
+
 ## [0.1.0] - 2026-10-31
 
 ### Added
