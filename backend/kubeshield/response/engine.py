@@ -124,7 +124,7 @@ def _create_from_playbook(db: Session, pb: Playbook, incident: Incident, event: 
         action.result = {"changed": False, "message": "Alert-only playbook: no cluster change."}
     db.add(action)
     db.flush()
-    audit.record(db, "playbook", f"response.{action.status}", _target(action), incident_id=incident.id,
+    audit.record(db, "playbook", f"response.{action.status}", target_label(action), incident_id=incident.id,
                  details={"action_id": action.id, "action": action.action_type, "playbook": pb.name,
                           "trigger_event": event.id, "mode": mode})
     if mode == "auto":
@@ -132,7 +132,7 @@ def _create_from_playbook(db: Session, pb: Playbook, incident: Incident, event: 
     return action
 
 
-def _target(a: ResponseAction) -> str:
+def target_label(a: ResponseAction) -> str:
     return f"{a.target_kind}/{a.target_namespace}/{a.target_name}"
 
 
@@ -156,7 +156,7 @@ def request_manual(db: Session, incident: Incident | None, action_type: str, nam
     )
     db.add(action)
     db.flush()
-    audit.record(db, actor, "response.requested", _target(action), incident_id=action.incident_id,
+    audit.record(db, actor, "response.requested", target_label(action), incident_id=action.incident_id,
                  details={"action_id": action.id, "action": action_type, "reason": action.reason})
     return action
 
@@ -169,7 +169,7 @@ def decide(db: Session, action: ResponseAction, approve: bool, actor: str, note:
     action.decided_at = utcnow()
     if not approve:
         action.completed_at = utcnow()
-    audit.record(db, actor, "response.approved" if approve else "response.rejected", _target(action),
+    audit.record(db, actor, "response.approved" if approve else "response.rejected", target_label(action),
                  incident_id=action.incident_id, details={"action_id": action.id, "note": note})
 
 
@@ -223,7 +223,7 @@ def execute(action_id: str) -> None:
             log.exception("response action %s crashed", action_id)
             action.status, action.error = "failed", f"unexpected error: {exc}"
         action.completed_at = utcnow()
-        audit.record(db, "response-engine", f"response.{action.status}", _target(action),
+        audit.record(db, "response-engine", f"response.{action.status}", target_label(action),
                      incident_id=action.incident_id,
                      details={"action_id": action.id, "action": action.action_type, "error": action.error,
                               "verified": (action.verification or {}).get("verified")})

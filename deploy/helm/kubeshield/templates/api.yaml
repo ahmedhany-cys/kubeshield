@@ -58,7 +58,7 @@ spec:
             - {name: trivy-cache, mountPath: /var/cache/trivy}
       volumes:
         - name: tmp
-          emptyDir: {sizeLimit: 256Mi}
+          emptyDir: {sizeLimit: {{ .Values.api.tmpSizeLimit }}}
         - name: trivy-cache
           emptyDir: {sizeLimit: {{ .Values.api.trivyCacheSizeLimit }}}
 ---

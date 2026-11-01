@@ -12,8 +12,12 @@ api:
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: "1", memory: 768Mi}
-  # Trivy vulnerability DB cache (emptyDir). Re-downloaded after a pod restart.
-  trivyCacheSizeLimit: 2Gi
+  # Trivy vulnerability DB cache (emptyDir). Re-downloaded after a pod restart; the extracted DB alone
+  # is ~1.6 GB with Trivy 0.76, so leave headroom for the scan cache.
+  trivyCacheSizeLimit: 3Gi
+  # /tmp (emptyDir). Trivy stages the compressed DB download here (~270 MB observed) before extracting
+  # it into the cache; a smaller limit gets the pod evicted on its first scan after a restart.
+  tmpSizeLimit: 1Gi
   env:
     KUBESHIELD_INVENTORY_INTERVAL_SECONDS: "60"
     KUBESHIELD_POLICY_INTERVAL_SECONDS: "60"
