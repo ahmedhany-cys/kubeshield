@@ -1,5 +1,9 @@
 # KubeShield
 
+[![CI](https://github.com/ahmedhany-cys/kubeshield/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmedhany-cys/kubeshield/actions/workflows/ci.yml)
+[![Secret scan](https://github.com/ahmedhany-cys/kubeshield/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/ahmedhany-cys/kubeshield/actions/workflows/secret-scan.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 **Kubernetes runtime threat detection and automated response platform.**
 
 KubeShield detects malicious container activity, finds dangerous cluster configuration, correlates

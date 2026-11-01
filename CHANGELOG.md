@@ -10,6 +10,11 @@ All notable changes to this project are documented here. The format follows
 - End-to-end checks for delete pod (forensics, replacement), scale to zero (restore) and the lab guard
   refusing an action outside the laboratory.
 
+### Changed
+- CI actions are pinned to commit SHAs and Trivy runs from the pinned `aquasec/trivy:0.76.1` image.
+- The runtime image no longer contains `pip` (its vendored urllib3, msgpack and setuptools carried HIGH
+  CVEs). Accepted scanner findings are recorded with reasons in `.trivyignore.yaml`.
+
 ### Fixed
 - API pod was evicted on its first image scan after a restart: Trivy's DB download overflowed the
   256 Mi `/tmp` volume. `/tmp` and the Trivy cache limits are now configurable (`api.tmpSizeLimit`,
