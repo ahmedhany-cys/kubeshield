@@ -1,0 +1,12 @@
+# Accepted risks for `trivy config`. Each entry is scoped to one file and explained; see docs/security-model.md.
+misconfigurations:
+  - id: KSV-0053
+    paths: [deploy/helm/kubeshield/templates/rbac.yaml]
+    statement: >-
+      Role kubeshield-responder (lab namespaces only) needs pods/exec so attack simulations can run their
+      commands inside lab workloads. It is never bound outside the namespaces labelled kubeshield.io/lab=true.
+  - id: KSV-0056
+    paths: [deploy/helm/kubeshield/templates/rbac.yaml]
+    statement: >-
+      Role kubeshield-responder (lab namespaces only) manages NetworkPolicies to quarantine pods when Cilium
+      is not available. Writing network policy is the response capability itself; scope is the lab only.

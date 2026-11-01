@@ -8,15 +8,20 @@ on:
 permissions:
   contents: read
 
+# Third-party actions are pinned to commit SHAs. Trivy runs from its pinned container image, the same
+# version KubeShield ships (0.76.1).
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.76.1
+
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
@@ -30,13 +35,13 @@ jobs:
         run: pip-audit --skip-editable
 
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           cache: npm
@@ -48,10 +53,12 @@ jobs:
         run: npm audit --audit-level=high
 
   manifests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.1
       - name: Lint Helm charts
         run: |
           helm lint deploy/helm/kubeshield
@@ -61,25 +68,20 @@ jobs:
           docker run --rm -v "$PWD/deploy/falco:/rules:ro" falcosecurity/falco:0.45.2 \
             falco -V /etc/falco/falco_rules.yaml -V /rules/kubeshield_rules.yaml
       - name: Trivy configuration scan (Helm charts, manifests, Dockerfile)
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          scan-type: config
-          scan-ref: .
-          severity: CRITICAL,HIGH
-          skip-dirs: deploy/lab
-          exit-code: "1"
+        # deploy/lab is deliberately insecure (it is the attack target). Accepted findings, each with a
+        # reason, are in .trivyignore.yaml.
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -w /src "$TRIVY_IMAGE" config --quiet \
+            --severity CRITICAL,HIGH --skip-dirs deploy/lab --ignorefile .trivyignore.yaml --exit-code 1 .
 
   image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [backend, frontend]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build image
         run: docker build -t kubeshield:ci .
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: kubeshield:ci
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: "1"
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --quiet \
+            --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 kubeshield:ci

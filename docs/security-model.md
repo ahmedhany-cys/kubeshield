@@ -77,6 +77,12 @@ lab values). Put KubeShield behind TLS and set `cookieSecure: true` anywhere els
 
 - Python and npm dependencies are pinned through `pyproject.toml` minimums and `package-lock.json`;
   CI runs `pip-audit`, `npm audit`, Trivy config, secret and image scans.
+- CI actions are pinned to commit SHAs; Trivy runs from the pinned `aquasec/trivy:0.76.1` image rather than
+  a wrapper action.
+- Accepted scanner findings live in `.trivyignore.yaml`, each scoped to one file with its reason. Today
+  that is two HIGH RBAC findings on the lab-only responder Role: `pods/exec` (simulations) and
+  NetworkPolicy write access (quarantine without Cilium). Both are the response capability itself and
+  are never granted outside namespaces labelled `kubeshield.io/lab=true`.
 - Hubble gRPC stubs are generated from Cilium v1.20.4 protos (Apache-2.0), vendored in
   `backend/proto` and `backend/kubeshield/network/hubble_api`.
 
