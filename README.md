@@ -62,11 +62,12 @@ Details, data flow and design decisions: [docs/architecture.md](docs/architectur
 
 ## Validation results
 
-`e2e/run_e2e.py` runs every scenario through the API, then approves a playbook's isolation request and
-proves containment with real connections. The generated report:
+`e2e/run_e2e.py` runs every scenario through the API, approves a playbook's isolation request and proves
+it with real connections, then applies and releases namespace containment and probes it the same way.
+The generated report:
 [docs/validation/detection-validation-report.md](docs/validation/detection-validation-report.md).
 
-Last full automated run (2026-10-31, before the final noise-tuning and containment fixes below):
+Last full automated run: 2026-11-01, 36 of 36 checks passed, on the code in this repository.
 
 | Scenario | Expected | Outcome |
 |---|---|---|
@@ -80,10 +81,11 @@ Last full automated run (2026-10-31, before the final noise-tuning and containme
 | Dangerous Kubernetes configuration | posture findings + Kyverno audit reports | detected |
 | Vulnerable image (`alpine:3.10.0`) | critical/high CVEs before deployment | detected (3 critical, 9 high) |
 | Response flow | approve → isolate → verify → traffic blocked both ways → audit → release → restored | 10/10 checks passed |
+| Namespace containment | DNS and same-namespace kept; API server and other namespaces blocked; released → restored | 8/8 checks passed |
 
 Additional live checks performed against the cluster (via the API, results recorded in its audit log):
-delete pod with forensics capture — succeeded; scale to zero — succeeded; namespace containment — see the
-next section.
+delete pod with forensics capture — succeeded; scale to zero — succeeded. These two are covered by unit
+tests but not by the automated end-to-end run.
 
 ### Problems found by testing (and fixed)
 
@@ -95,9 +97,13 @@ Testing against real telemetry and real traffic changed the design in several pl
 - **Deny-only Cilium policies default-deny the endpoint.** Namespace containment initially broke DNS;
   it now sets `enableDefaultDeny: false`.
 - **The kind API server is a host identity.** Namespace-selector denies did not block it; containment now
-  denies the `kube-apiserver`, `host` and `remote-node` entities. Verified manually with real connections
-  (DNS and same-namespace traffic kept; API server and cross-namespace pod blocked). The automated
-  containment check was added to `run_e2e.py` but has **not completed a full run yet** (see below).
+  denies the `kube-apiserver`, `host` and `remote-node` entities, verified by the automated containment
+  check above.
+- **Trivy overflowed the pod's `/tmp`.** On the first scan after a restart, Trivy stages its ~270 MB DB
+  download in `/tmp`; the 256 Mi limit got the API pod evicted mid-run. The limits are now 1 Gi / 3 Gi.
+- **Interrupted work blocked the platform.** The simulation running when the pod was evicted stayed
+  `running` forever and refused every new run (scans had the same problem). Startup now marks in-flight
+  work as failed and audits it; response actions are never replayed without a human.
 - **Falco details:** enter events are gone in 0.45, failed `connect()` calls have no socket tuple, `fchmodat`
   reports `SUCCESS` not `0`, and the default `rule_matching: first` hid KubeShield alerts behind upstream
   rules. See [detection-rules.md](docs/detection-rules.md).
@@ -113,11 +119,11 @@ All screenshots come from the running application with data produced by the scen
 |---|---|
 | ![Runtime threats](docs/screenshots/02-runtime-threat-detection.png) Runtime threat detection | ![Cluster](docs/screenshots/03-kubernetes-cluster-overview.png) Kubernetes cluster and posture |
 | ![Vulnerabilities](docs/screenshots/04-vulnerability-scanning.png) Image vulnerability scanning | ![Policies](docs/screenshots/05-policy-violations.png) Kyverno policies and violations |
-| ![Simulation](docs/screenshots/07-attack-simulation-results.png) Attack simulation results | ![MITRE](docs/screenshots/08-mitre-attack-mapping.png) ATT&CK coverage from validation runs |
+| ![Incident](docs/screenshots/06-incident-investigation.png) Incident investigation, timeline and audit trail | ![Simulation](docs/screenshots/07-attack-simulation-results.png) Attack simulation results |
+| ![MITRE](docs/screenshots/08-mitre-attack-mapping.png) ATT&CK coverage from validation runs | ![Responses](docs/screenshots/09-automated-response-history.png) Response history with verification |
 | ![Network](docs/screenshots/10-network-security.png) Hubble flows and policies | ![Settings](docs/screenshots/11-settings-system-status.png) Settings, integrations, detection catalog |
 
-The incident-investigation and response-history screenshots are not included yet: they were captured
-before the API fix above and showed the crash. They will be regenerated with the next full run.
+The `error` row in the simulation history is real: it is the run interrupted by the `/tmp` eviction above.
 
 ## Quick start
 
@@ -148,7 +154,7 @@ e2e/.venv/bin/python e2e/screenshots.py --browser-channel chrome
 
 | Layer | What | How |
 |---|---|---|
-| Unit (61 tests) | Falco normalisation, incident correlation, playbooks and safety switches, response execution and verification (fake Kubernetes), lab guard, posture and RBAC checks, Trivy parsing and input validation, auth/CSRF/rate limiting/JWT tampering, Hubble flow conversion, Kyverno parsing, ATT&CK coverage | `cd backend && python -m pytest` |
+| Unit (62 tests) | Falco normalisation, incident correlation, playbooks and safety switches, response execution and verification (fake Kubernetes), lab guard, posture and RBAC checks, Trivy parsing and input validation, auth/CSRF/rate limiting/JWT tampering, Hubble flow conversion, Kyverno parsing, ATT&CK coverage | `cd backend && python -m pytest` |
 | End-to-end | All scenarios, approval-gated isolation with traffic tests, namespace containment, audit trail | `e2e/run_e2e.py` |
 | Static / supply chain | ruff, strict TypeScript, Helm lint, Falco rule validation, Trivy config/secret/image scans, pip-audit, npm audit | `.github/workflows/` |
 
