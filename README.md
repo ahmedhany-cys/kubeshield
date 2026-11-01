@@ -63,11 +63,11 @@ Details, data flow and design decisions: [docs/architecture.md](docs/architectur
 ## Validation results
 
 `e2e/run_e2e.py` runs every scenario through the API, approves a playbook's isolation request and proves
-it with real connections, then applies and releases namespace containment and probes it the same way.
-The generated report:
+it with real connections, applies and releases namespace containment and probes it the same way, then
+runs the destructive actions and the lab guard. The generated report:
 [docs/validation/detection-validation-report.md](docs/validation/detection-validation-report.md).
 
-Last full automated run: 2026-11-01, 36 of 36 checks passed, on the code in this repository.
+Last full automated run: 2026-11-01, 46 of 46 checks passed, on the code in this repository.
 
 | Scenario | Expected | Outcome |
 |---|---|---|
@@ -82,10 +82,8 @@ Last full automated run: 2026-11-01, 36 of 36 checks passed, on the code in this
 | Vulnerable image (`alpine:3.10.0`) | critical/high CVEs before deployment | detected (3 critical, 9 high) |
 | Response flow | approve → isolate → verify → traffic blocked both ways → audit → release → restored | 10/10 checks passed |
 | Namespace containment | DNS and same-namespace kept; API server and other namespaces blocked; released → restored | 8/8 checks passed |
-
-Additional live checks performed against the cluster (via the API, results recorded in its audit log):
-delete pod with forensics capture — succeeded; scale to zero — succeeded. These two are covered by unit
-tests but not by the automated end-to-end run.
+| Destructive actions | delete pod (forensics captured, pod replaced) · scale to zero (previous replicas recorded, restored) | 8/8 checks passed |
+| Lab guard | `delete_pod` against `kube-system` is `refused` and the pod is left untouched | 2/2 checks passed |
 
 ### Problems found by testing (and fixed)
 
@@ -155,7 +153,7 @@ e2e/.venv/bin/python e2e/screenshots.py --browser-channel chrome
 | Layer | What | How |
 |---|---|---|
 | Unit (62 tests) | Falco normalisation, incident correlation, playbooks and safety switches, response execution and verification (fake Kubernetes), lab guard, posture and RBAC checks, Trivy parsing and input validation, auth/CSRF/rate limiting/JWT tampering, Hubble flow conversion, Kyverno parsing, ATT&CK coverage | `cd backend && python -m pytest` |
-| End-to-end | All scenarios, approval-gated isolation with traffic tests, namespace containment, audit trail | `e2e/run_e2e.py` |
+| End-to-end | All scenarios, approval-gated isolation with traffic tests, namespace containment, delete/scale with forensics, lab guard refusal, audit trail | `e2e/run_e2e.py` |
 | Static / supply chain | ruff, strict TypeScript, Helm lint, Falco rule validation, Trivy config/secret/image scans, pip-audit, npm audit | `.github/workflows/` |
 
 ## Security

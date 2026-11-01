@@ -1,27 +1,27 @@
 {
-  "generated_at": "2026-11-01T03:49:00.816351+00:00",
+  "generated_at": "2026-11-01T04:16:27.576063+00:00",
   "environment": {
     "kubernetes": "v1.37.0",
     "node_os": "Debian GNU/Linux 13 (trixie)",
     "kernel": "6.8.0-117-generic",
     "container_runtime": "containerd://2.3.4",
     "architecture": "arm64",
-    "integrations": "falco=healthy, falcosidekick=healthy, kyverno=healthy, kyverno-reports=healthy, cilium=healthy, hubble-relay=healthy, tetragon=not_installed",
+    "integrations": "falco=degraded, falcosidekick=healthy, kyverno=healthy, kyverno-reports=healthy, cilium=healthy, hubble-relay=degraded, tetragon=not_installed",
     "kubeshield": "0.1.0",
     "trivy": "0.76.1"
   },
   "results": [
     {
-      "id": "sim_72b3ec2eb4c94ec1a923",
+      "id": "sim_66002ca336754170bc3f",
       "scenario_id": "shell-in-container",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:15.377551+00:00",
-      "finished_at": "2026-11-01T03:45:17.668157+00:00",
+      "started_at": "2026-11-01T04:13:04.719637+00:00",
+      "finished_at": "2026-11-01T04:13:07.108218+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:15.625565+00:00",
+          "at": "2026-11-01T04:13:05.055997+00:00",
           "title": "Executed attack command in lab pod",
           "pod": "lab-apps/storefront-7c689d4c54-ssns5",
           "command": [
@@ -39,52 +39,40 @@
           "title": "Detection ks.001 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "falco_b7a6dc66-1d7a-48fc-8163-89a3d0a2546c"
+            "falco_47ba6764-0450-462b-a523-86407ff71f17"
           ]
         }
       ],
       "evidence": {
         "event_ids": [
-          "falco_b7a6dc66-1d7a-48fc-8163-89a3d0a2546c"
+          "falco_47ba6764-0450-462b-a523-86407ff71f17"
         ],
         "incident_ids": [
-          34
+          48
         ],
         "response_actions": [
           {
-            "id": "act_d03bab16a7cb4f2aac3c",
+            "id": "act_c3e42e2ef3b44e5c9c0f",
             "action": "alert_only",
             "status": "alerted",
             "mode": "alert_only"
-          },
-          {
-            "id": "act_fa6aca1d5e064e01b646",
-            "action": "isolate_pod",
-            "status": "pending_approval",
-            "mode": "approval"
-          },
-          {
-            "id": "act_466abcf946534f7f87d5",
-            "action": "delete_pod",
-            "status": "pending_approval",
-            "mode": "approval"
           }
         ]
       },
       "error": null,
-      "incident_id": 34
+      "incident_id": 48
     },
     {
-      "id": "sim_7ece441d09ab4860a4f2",
+      "id": "sim_7d0fa8a0a3314f129d63",
       "scenario_id": "sensitive-file-access",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:18.454642+00:00",
-      "finished_at": "2026-11-01T03:45:20.698747+00:00",
+      "started_at": "2026-11-01T04:13:07.812661+00:00",
+      "finished_at": "2026-11-01T04:13:09.984000+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:18.645666+00:00",
+          "at": "2026-11-01T04:13:07.948898+00:00",
           "title": "Executed attack command in lab pod",
           "pod": "lab-apps/storefront-7c689d4c54-ssns5",
           "command": [
@@ -102,52 +90,46 @@
           "title": "Detection ks.003 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "falco_be615ba0-bfcd-426a-9c6a-fa79352652f6"
+            "falco_ffdb099c-8b86-4fa9-909d-82c69d4dd7f0"
           ]
         }
       ],
       "evidence": {
         "event_ids": [
-          "falco_be615ba0-bfcd-426a-9c6a-fa79352652f6"
+          "falco_ffdb099c-8b86-4fa9-909d-82c69d4dd7f0"
         ],
         "incident_ids": [
-          34
+          48
         ],
         "response_actions": [
           {
-            "id": "act_d03bab16a7cb4f2aac3c",
+            "id": "act_c3e42e2ef3b44e5c9c0f",
             "action": "alert_only",
             "status": "alerted",
             "mode": "alert_only"
           },
           {
-            "id": "act_fa6aca1d5e064e01b646",
+            "id": "act_eb2bfde928484378b7d3",
             "action": "isolate_pod",
-            "status": "pending_approval",
-            "mode": "approval"
-          },
-          {
-            "id": "act_466abcf946534f7f87d5",
-            "action": "delete_pod",
             "status": "pending_approval",
             "mode": "approval"
           }
         ]
       },
       "error": null,
-      "incident_id": 34
+      "incident_id": 48
     },
     {
-      "id": "sim_8c782ca886cd474391d1",
+      "id": "sim_7dc17a3bfaa048f69665",
       "scenario_id": "service-account-token-access",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:21.526091+00:00",
-      "finished_at": "2026-11-01T03:45:23.671766+00:00",
+      "started_at": "2026-11-01T04:13:10.873725+00:00",
+      "finished_at": "2026-11-01T04:13:13.281123+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:21.747711+00:00",
+          "at": "2026-11-01T04:13:11.237832+00:00",
           "title": "Executed attack command in lab pod",
           "pod": "lab-apps/storefront-7c689d4c54-ssns5",
           "command": [
@@ -165,32 +147,32 @@
           "title": "Detection ks.004 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "falco_50427e41-e920-4db8-80eb-4ce7aa946a52"
+            "falco_1ce36a1d-d4ab-47bf-b710-17ac9bc5431d"
           ]
         }
       ],
       "evidence": {
         "event_ids": [
-          "falco_50427e41-e920-4db8-80eb-4ce7aa946a52"
+          "falco_1ce36a1d-d4ab-47bf-b710-17ac9bc5431d"
         ],
         "incident_ids": [
-          34
+          48
         ],
         "response_actions": [
           {
-            "id": "act_d03bab16a7cb4f2aac3c",
+            "id": "act_c3e42e2ef3b44e5c9c0f",
             "action": "alert_only",
             "status": "alerted",
             "mode": "alert_only"
           },
           {
-            "id": "act_fa6aca1d5e064e01b646",
+            "id": "act_eb2bfde928484378b7d3",
             "action": "isolate_pod",
             "status": "pending_approval",
             "mode": "approval"
           },
           {
-            "id": "act_466abcf946534f7f87d5",
+            "id": "act_99e48097391048e2837e",
             "action": "delete_pod",
             "status": "pending_approval",
             "mode": "approval"
@@ -198,19 +180,19 @@
         ]
       },
       "error": null,
-      "incident_id": 34
+      "incident_id": 48
     },
     {
-      "id": "sim_8046c4ab2e11487bb832",
+      "id": "sim_e104e90e25814d9eadfa",
       "scenario_id": "suspicious-process",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:24.500872+00:00",
-      "finished_at": "2026-11-01T03:45:26.831149+00:00",
+      "started_at": "2026-11-01T04:13:13.940052+00:00",
+      "finished_at": "2026-11-01T04:13:16.161850+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:24.727482+00:00",
+          "at": "2026-11-01T04:13:14.137864+00:00",
           "title": "Executed attack command in lab pod",
           "pod": "lab-apps/storefront-7c689d4c54-ssns5",
           "command": [
@@ -228,40 +210,40 @@
           "title": "Detection ks.006 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "falco_c7bd0e95-d805-4525-b7d7-402a70afce9b"
+            "falco_77d9b014-7920-42cb-b9c9-1695a15339f5"
           ]
         },
         {
           "title": "Detection ks.005 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "falco_5b19e932-a414-433f-baa8-5e1e12037651"
+            "falco_b7453b1f-b9ef-46ef-b89d-813e2ba9ea0f"
           ]
         }
       ],
       "evidence": {
         "event_ids": [
-          "falco_5b19e932-a414-433f-baa8-5e1e12037651",
-          "falco_c7bd0e95-d805-4525-b7d7-402a70afce9b"
+          "falco_77d9b014-7920-42cb-b9c9-1695a15339f5",
+          "falco_b7453b1f-b9ef-46ef-b89d-813e2ba9ea0f"
         ],
         "incident_ids": [
-          34
+          48
         ],
         "response_actions": [
           {
-            "id": "act_d03bab16a7cb4f2aac3c",
+            "id": "act_c3e42e2ef3b44e5c9c0f",
             "action": "alert_only",
             "status": "alerted",
             "mode": "alert_only"
           },
           {
-            "id": "act_fa6aca1d5e064e01b646",
+            "id": "act_eb2bfde928484378b7d3",
             "action": "isolate_pod",
             "status": "pending_approval",
             "mode": "approval"
           },
           {
-            "id": "act_466abcf946534f7f87d5",
+            "id": "act_99e48097391048e2837e",
             "action": "delete_pod",
             "status": "pending_approval",
             "mode": "approval"
@@ -269,19 +251,19 @@
         ]
       },
       "error": null,
-      "incident_id": 34
+      "incident_id": 48
     },
     {
-      "id": "sim_7bb06a5bf25f4c11811b",
+      "id": "sim_12dc5828809b4a9d8953",
       "scenario_id": "host-path-access",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:27.710653+00:00",
-      "finished_at": "2026-11-01T03:45:30.140449+00:00",
+      "started_at": "2026-11-01T04:13:16.987973+00:00",
+      "finished_at": "2026-11-01T04:13:19.120922+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:28.039472+00:00",
+          "at": "2026-11-01T04:13:17.070642+00:00",
           "title": "Executed attack command in lab pod",
           "pod": "lab-legacy/legacy-reporting-b75d8cbf4-vt8mb",
           "command": [
@@ -299,13 +281,13 @@
           "title": "Detection ks.008 received from lab-legacy/legacy-reporting-b75d8cbf4-vt8mb",
           "passed": true,
           "event_ids": [
-            "falco_33caa47c-8de6-4624-9385-87071d91eabb"
+            "falco_57e317e4-6789-4f3d-a00a-41ad9626740b"
           ]
         }
       ],
       "evidence": {
         "event_ids": [
-          "falco_33caa47c-8de6-4624-9385-87071d91eabb"
+          "falco_57e317e4-6789-4f3d-a00a-41ad9626740b"
         ],
         "incident_ids": [
           35
@@ -335,16 +317,16 @@
       "incident_id": 35
     },
     {
-      "id": "sim_7c652c74f25243ed9332",
+      "id": "sim_32b83a68284c41f1b194",
       "scenario_id": "unauthorized-pod-communication",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:30.847229+00:00",
-      "finished_at": "2026-11-01T03:45:38.913922+00:00",
+      "started_at": "2026-11-01T04:13:20.037804+00:00",
+      "finished_at": "2026-11-01T04:13:25.185063+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:34.805537+00:00",
+          "at": "2026-11-01T04:13:23.155310+00:00",
           "title": "Attempted connection from storefront to payments-db:5432",
           "command": [
             "sh",
@@ -366,48 +348,48 @@
           "title": "Detection ks.002 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "falco_29062d6b-dda4-48f8-9bd5-1fc17060f59e"
+            "falco_4f31b23c-e0f9-411b-a27e-32072eddecb2"
           ]
         },
         {
           "title": "Detection ks.007 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "falco_3b149e75-bf5f-4cc2-ae25-c1574de194e5"
+            "falco_967363df-dc47-471d-a9f6-3a34ae79dda6"
           ]
         },
         {
           "title": "Detection ks.101 received from lab-apps/storefront-7c689d4c54-ssns5",
           "passed": true,
           "event_ids": [
-            "hubble_a97644d35b209564bb761ca04c6e35905de7e526"
+            "hubble_d430feff4d9a3cb1ce24ef8b2fd69e0a6c781752"
           ]
         }
       ],
       "evidence": {
         "event_ids": [
-          "falco_29062d6b-dda4-48f8-9bd5-1fc17060f59e",
-          "falco_3b149e75-bf5f-4cc2-ae25-c1574de194e5",
-          "hubble_a97644d35b209564bb761ca04c6e35905de7e526"
+          "falco_4f31b23c-e0f9-411b-a27e-32072eddecb2",
+          "falco_967363df-dc47-471d-a9f6-3a34ae79dda6",
+          "hubble_d430feff4d9a3cb1ce24ef8b2fd69e0a6c781752"
         ],
         "incident_ids": [
-          34
+          48
         ],
         "response_actions": [
           {
-            "id": "act_d03bab16a7cb4f2aac3c",
+            "id": "act_c3e42e2ef3b44e5c9c0f",
             "action": "alert_only",
             "status": "alerted",
             "mode": "alert_only"
           },
           {
-            "id": "act_fa6aca1d5e064e01b646",
+            "id": "act_eb2bfde928484378b7d3",
             "action": "isolate_pod",
             "status": "pending_approval",
             "mode": "approval"
           },
           {
-            "id": "act_466abcf946534f7f87d5",
+            "id": "act_99e48097391048e2837e",
             "action": "delete_pod",
             "status": "pending_approval",
             "mode": "approval"
@@ -415,23 +397,23 @@
         ]
       },
       "error": null,
-      "incident_id": 34
+      "incident_id": 48
     },
     {
-      "id": "sim_a59e8c929e634785a150",
+      "id": "sim_a87bca2f27a5413eb5e3",
       "scenario_id": "privileged-container-deployment",
       "status": "completed",
       "outcome": "blocked",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:40.046280+00:00",
-      "finished_at": "2026-11-01T03:45:40.363028+00:00",
+      "started_at": "2026-11-01T04:13:26.063000+00:00",
+      "finished_at": "2026-11-01T04:13:26.294810+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:40.160874+00:00",
+          "at": "2026-11-01T04:13:26.152509+00:00",
           "title": "Submitted privileged hostPID pod",
           "admitted": false,
           "http_status": 400,
-          "response": "{\"kind\":\"Status\",\"apiVersion\":\"v1\",\"metadata\":{},\"status\":\"Failure\",\"message\":\"admission webhook \\\"vpol.validate.kyverno.svc-fail-36d59d4b\\\" denied the request: Policy ks-disallow-host-pid-ipc-enforce failed: Sharing the host PID namespace (hostPID) is not allowed.; Policy ks-disallow-privileged-enforce failed: Privileged containers are not allowed (securityContext.privileged must be false).; Policy ks-disallow-privilege-escalation-enforce failed: allowPrivilegeEscalation must be set to false.; Policy ks-require-resource-limits-enforce failed: Every container must define resources.limits.cpu and resources.limits.memory.; Policy ks-require-run-as-non-root-enforce failed: Containers must set runAsNonRoot: true (pod or container securityContext).\",\"code\":400}\n"
+          "response": "{\"kind\":\"Status\",\"apiVersion\":\"v1\",\"metadata\":{},\"status\":\"Failure\",\"message\":\"admission webhook \\\"vpol.validate.kyverno.svc-fail-36d59d4b\\\" denied the request: Policy ks-disallow-privilege-escalation-enforce failed: allowPrivilegeEscalation must be set to false.; Policy ks-require-resource-limits-enforce failed: Every container must define resources.limits.cpu and resources.limits.memory.; Policy ks-require-run-as-non-root-enforce failed: Containers must set runAsNonRoot: true (pod or container securityContext).; Policy ks-disallow-privileged-enforce failed: Privileged containers are not allowed (securityContext.privileged must be false).; Policy ks-disallow-host-pid-ipc-enforce failed: Sharing the host PID namespace (hostPID) is not allowed.\",\"code\":400}\n"
         }
       ],
       "checks": [
@@ -444,49 +426,49 @@
           "title": "Admission denial recorded as policy violation",
           "passed": true,
           "violation_ids": [
-            "8c6b6e1b270a19baa8ceef4cc0e77b3f419a6af4",
-            "03261c129f79a2cf7aa511b121847ddb8c3ef0b2",
-            "86f71e177eb6d44f20ed926652401207517e97db",
-            "9899618ee01a1eda897beb1a065639b4368ebe1c",
-            "f88fb0ca58b03d45c473d9385db0a241435ac806"
+            "08ddab73fddd42e7178520fc6cd74447cc9a8eab",
+            "9964d413964bd39d91cb0e462db2cb69dc29fa99",
+            "45018b62473728258124ed49e5f3bd82fa61cfe3",
+            "cd1781a9b58abfc55d3c79687b951842d2871c86",
+            "65ac52e3d16a8fb36038e1a1be7d32f223b23397"
           ]
         },
         {
           "title": "Security event ks.201 raised for the blocked deployment",
           "passed": true,
           "event_ids": [
-            "kyverno_8c6b6e1b270a19baa8ceef4cc0e77b3f419a6af4",
-            "kyverno_86f71e177eb6d44f20ed926652401207517e97db"
+            "kyverno_45018b62473728258124ed49e5f3bd82fa61cfe3",
+            "kyverno_08ddab73fddd42e7178520fc6cd74447cc9a8eab"
           ]
         }
       ],
       "evidence": {
         "event_ids": [
-          "kyverno_8c6b6e1b270a19baa8ceef4cc0e77b3f419a6af4",
-          "kyverno_86f71e177eb6d44f20ed926652401207517e97db"
+          "kyverno_45018b62473728258124ed49e5f3bd82fa61cfe3",
+          "kyverno_08ddab73fddd42e7178520fc6cd74447cc9a8eab"
         ]
       },
       "error": null,
       "incident_id": null
     },
     {
-      "id": "sim_0c0fe82870d84c528a8a",
+      "id": "sim_3ec5c7c2abb649da8294",
       "scenario_id": "dangerous-configuration",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:45:43.031233+00:00",
-      "finished_at": "2026-11-01T03:46:46.914895+00:00",
+      "started_at": "2026-11-01T04:13:29.158935+00:00",
+      "finished_at": "2026-11-01T04:14:31.162057+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:45:43.232906+00:00",
+          "at": "2026-11-01T04:13:29.201892+00:00",
           "title": "Created insecure Deployment in audit-mode namespace",
-          "deployment": "lab-legacy/sim-dangerous-528a8a"
+          "deployment": "lab-legacy/sim-dangerous-da8294"
         },
         {
-          "at": "2026-11-01T03:46:46.906261+00:00",
+          "at": "2026-11-01T04:14:31.157419+00:00",
           "title": "Removed the insecure Deployment",
-          "deployment": "lab-legacy/sim-dangerous-528a8a"
+          "deployment": "lab-legacy/sim-dangerous-da8294"
         }
       ],
       "checks": [
@@ -541,19 +523,19 @@
       "incident_id": null
     },
     {
-      "id": "sim_5e1e5fce3df648dda94a",
+      "id": "sim_0f3b08f7046f4a3ca73c",
       "scenario_id": "vulnerable-image-deployment",
       "status": "completed",
       "outcome": "detected",
       "requested_by": "admin",
-      "started_at": "2026-11-01T03:46:47.681941+00:00",
-      "finished_at": "2026-11-01T03:47:42.878187+00:00",
+      "started_at": "2026-11-01T04:14:32.807760+00:00",
+      "finished_at": "2026-11-01T04:14:37.830950+00:00",
       "steps": [
         {
-          "at": "2026-11-01T03:46:47.715129+00:00",
+          "at": "2026-11-01T04:14:32.815973+00:00",
           "title": "Queued Trivy scan of the image before deployment",
           "image": "docker.io/library/alpine:3.10.0",
-          "scan_id": "scan_4c2300e0c6ad4d0da3e2"
+          "scan_id": "scan_76c29b67c1124630a858"
         }
       ],
       "checks": [
@@ -576,7 +558,7 @@
         }
       ],
       "evidence": {
-        "scan_id": "scan_4c2300e0c6ad4d0da3e2"
+        "scan_id": "scan_76c29b67c1124630a858"
       },
       "error": null,
       "incident_id": null
@@ -587,7 +569,7 @@
       {
         "title": "Scenario produced an incident",
         "passed": true,
-        "incident_id": 34
+        "incident_id": 48
       },
       {
         "title": "Playbook requested isolation and waited for approval (safe default)",
@@ -609,7 +591,7 @@
             {
               "check": "pod carries quarantine label",
               "passed": true,
-              "observed": "inc-34"
+              "observed": "inc-48"
             },
             {
               "check": "CiliumNetworkPolicy with ingress/egress deny present",
@@ -622,7 +604,7 @@
               "observed": {
                 "policy_valid": true,
                 "endpoint_state": "ready",
-                "identity": 24110,
+                "identity": 51728,
                 "identity_has_quarantine_label": true
               }
             }
@@ -666,8 +648,8 @@
         "passed": true
       }
     ],
-    "incident_id": 34,
-    "action_id": "act_fa6aca1d5e064e01b646"
+    "incident_id": 48,
+    "action_id": "act_eb2bfde928484378b7d3"
   },
   "containment_validation": {
     "checks": [
@@ -742,7 +724,69 @@
         }
       }
     ],
-    "action_id": "act_837b980ad33145e0879f"
+    "action_id": "act_df05221799b24ffe9365"
+  },
+  "destructive_validation": {
+    "checks": [
+      {
+        "title": "Delete pod succeeded with verified deletion",
+        "passed": true,
+        "status": "succeeded"
+      },
+      {
+        "title": "Forensics captured before deletion (spec, images, owner, logs)",
+        "passed": true,
+        "captured": [
+          "images",
+          "labels",
+          "log_tail",
+          "node",
+          "owner_references",
+          "pod_uid",
+          "spec"
+        ]
+      },
+      {
+        "title": "Deployment replaced the pod with a new ready one",
+        "passed": true,
+        "replacement": "catalog-7b8f7994c8-9p9dp"
+      },
+      {
+        "title": "Delete recorded in the audit trail",
+        "passed": true
+      },
+      {
+        "title": "Scale to zero succeeded with verified replicas == 0",
+        "passed": true,
+        "status": "succeeded"
+      },
+      {
+        "title": "Previous replica count recorded for restore",
+        "passed": true,
+        "previous_replicas": 1
+      },
+      {
+        "title": "No catalog pods remain running",
+        "passed": true
+      },
+      {
+        "title": "Deployment restored after manual scale-up",
+        "passed": true
+      },
+      {
+        "title": "Action outside the lab refused by the lab guard",
+        "passed": true,
+        "status": "refused",
+        "error": "namespace 'kube-system' is not labelled kubeshield.io/lab=true; KubeShield only acts inside the isolated laboratory"
+      },
+      {
+        "title": "Target outside the lab left untouched",
+        "passed": true
+      }
+    ],
+    "delete_action_id": "act_0ca7079985a34c7a9bb4",
+    "scale_action_id": "act_cc0c5a38ace14476a4a8",
+    "refused_action_id": "act_6332a883503e4b6a9ad3"
   },
   "mitre": {
     "total_techniques": 32,

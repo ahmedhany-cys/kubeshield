@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- End-to-end checks for delete pod (forensics, replacement), scale to zero (restore) and the lab guard
+  refusing an action outside the laboratory.
+
 ### Fixed
 - API pod was evicted on its first image scan after a restart: Trivy's DB download overflowed the
   256 Mi `/tmp` volume. `/tmp` and the Trivy cache limits are now configurable (`api.tmpSizeLimit`,
