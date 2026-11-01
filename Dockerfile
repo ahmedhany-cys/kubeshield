@@ -15,14 +15,18 @@ ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /src
 COPY backend/pyproject.toml backend/README.md ./
 COPY backend/kubeshield ./kubeshield
-RUN python -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip && /opt/venv/bin/pip install .
+RUN python -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip && /opt/venv/bin/pip install . \
+    && /opt/venv/bin/pip uninstall -y pip
 
 FROM docker.io/library/python:3.13-slim
 LABEL org.opencontainers.image.title="KubeShield" \
       org.opencontainers.image.description="Kubernetes runtime threat detection and automated response" \
       org.opencontainers.image.source="https://github.com/ahmedhany-cys/kubeshield" \
       org.opencontainers.image.licenses="Apache-2.0"
+# The service never installs packages at runtime: drop pip (and the copies of urllib3, msgpack and
+# setuptools it vendors) from the base image as well as from the venv.
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* \
+    && python -m pip uninstall -y pip && rm -rf /usr/local/lib/python3.13/ensurepip \
     && groupadd --gid 10001 kubeshield && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin kubeshield
 COPY --from=trivy /usr/local/bin/trivy /usr/local/bin/trivy
 COPY --from=build /opt/venv /opt/venv

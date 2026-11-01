@@ -83,6 +83,8 @@ lab values). Put KubeShield behind TLS and set `cookieSecure: true` anywhere els
   that is two HIGH RBAC findings on the lab-only responder Role: `pods/exec` (simulations) and
   NetworkPolicy write access (quarantine without Cilium). Both are the response capability itself and
   are never granted outside namespaces labelled `kubeshield.io/lab=true`.
+- The runtime image contains no `pip`. One accepted image finding (with an expiry date): a go-jose DoS
+  CVE inside the bundled Trivy 0.76.1 binary, the latest Trivy release at the time of writing.
 - Hubble gRPC stubs are generated from Cilium v1.20.4 protos (Apache-2.0), vendored in
   `backend/proto` and `backend/kubeshield/network/hubble_api`.
 

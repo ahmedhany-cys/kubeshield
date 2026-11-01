@@ -1,4 +1,4 @@
-# Accepted risks for `trivy config`. Each entry is scoped to one file and explained; see docs/security-model.md.
+# Accepted risks for Trivy scans. Each entry is scoped to one file and explained; see docs/security-model.md.
 misconfigurations:
   - id: KSV-0053
     paths: [deploy/helm/kubeshield/templates/rbac.yaml]
@@ -10,3 +10,11 @@ misconfigurations:
     statement: >-
       Role kubeshield-responder (lab namespaces only) manages NetworkPolicies to quarantine pods when Cilium
       is not available. Writing network policy is the response capability itself; scope is the lab only.
+
+vulnerabilities:
+  - id: CVE-2026-116587
+    paths: [usr/local/bin/trivy]
+    expired_at: 2027-01-31
+    statement: >-
+      go-jose DoS via crafted JWK RSA parameters, inside the Trivy 0.76.1 binary bundled for image scanning.
+      0.76.1 is the latest Trivy release; upgrade Trivy when a release ships go-jose >= 4.1.6.
